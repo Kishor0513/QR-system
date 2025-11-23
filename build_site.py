@@ -1,7 +1,19 @@
+"""Deprecated build script.
+
+This project now uses a simplified static JSON + single-page architecture.
+Please use `python scripts/build.py` instead of this legacy script.
+
+Keeping this file for reference; invoking it will exit immediately.
+"""
+
+import sys
+
+sys.exit("build_site.py is deprecated. Run: python scripts/build.py")
+
+# Legacy code retained below for reference (not executed).
 import csv
 import os
 import re
-import sys
 from pathlib import Path
 from typing import List, Dict
 

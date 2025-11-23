@@ -1,46 +1,70 @@
 # Felt & Yarn QR Static Site
 
-Generates a static site (`site/`) with:
+Static product info site built from CSV files. Current architecture:
 
-- `index.html`: searchable table of all products from all CSVs in `csvs/`.
-- Individual product pages: details + image + link + QR code PNG.
-- `qrcodes/`: PNG QR codes pointing to the product web URL.
+- `scripts/build.py`: Aggregates all `csvs/*.csv` -> `site/data/products.json` and pre-generates QR PNGs.
+- `site/index.html`: JS-driven searchable grid of products (loads JSON).
+- `site/product.html`: Dynamic single product page driven by query param `?p=<slug>`.
+- `site/qrcodes/`: PNG QR codes pointing to deployed `product.html?p=<slug>` URLs.
+
+Legacy generator `build_site.py` is deprecated (multi-page HTML approach) and now exits immediately.
 
 ## Requirements
 
 - Python 3.8+
-- Install dependencies:
+- Optional: `qrcode` and `Pillow` for PNG QR generation.
+
+Install (optional dependencies for QR images):
 
 ```powershell
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-## Usage
-
-Run the build script from the project root:
+## Build
 
 ```powershell
-python build_site.py
+python scripts/build.py
 ```
 
-This will create / update the `site/` directory.
-Open `site/index.html` in a browser (double-click or drag into browser).
+Environment override for deployed base URL (recommended before final QR generation):
+
+```powershell
+$env:SITE_BASE_URL = "https://your-site.netlify.app"
+python scripts/build.py
+```
+
+If `SITE_BASE_URL` is unset, a placeholder `https://example.com` is used.
+
+## Using the Site
+
+Open `site/index.html` locally or deploy the entire `site/` folder (Netlify, GitHub Pages, etc.).
+Scanning a QR opens `product.html?p=<slug>` showing product details.
+
+## Regenerating After CSV Changes
+
+Run the build again:
+
+```powershell
+python scripts/build.py
+```
 
 ## Notes
 
-- Rows without a product name and URL are skipped.
-- If `qrcode` is not installed, pages are generated but QR images are missing.
-- Slugs are based on product label or name; uniqueness ensured by appending SN if needed.
+- Products without a name are skipped.
+- Slug uniqueness ensured by suffix numbering (`slug`, `slug-2`, ...).
+- If `qrcode` lib missing, JSON still builds; PNGs are skipped.
 
-## Regenerate After CSV Change
+## Troubleshooting
 
-Just rerun:
+- Ensure CSV headers are consistent; unexpected header changes create empty fields.
+- Delete stale QR PNGs if removing many products (`Remove-Item site\qrcodes\*.png`). Re-run build.
 
-```powershell
-python build_site.py
-```
+## Deployment (Netlify)
 
-## Printing Single Product Pages
+Set `SITE_BASE_URL` in Netlify environment variables to your public domain (Netlify supplies `URL`).
+Deploy the prebuilt `site/` directory; no server-side code required.
 
-Each product page hides navigation when printing for clean QR + details output.
+## Printing
+
+Use browser print on `product.html?p=<slug>` for a clean QR + details sheet.
