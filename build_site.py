@@ -322,7 +322,7 @@ def main():
     GITHUB_USERNAME = "Kishor0513"
     
     # Choose deployment mode: 'local', 'github', or 'netlify'
-    DEPLOY_MODE = "github"  # Change this based on where you're deploying
+    DEPLOY_MODE = "netlify"  # Change this based on where you're deploying
     
     if DEPLOY_MODE == "local":
         # Auto-detect local IP
@@ -338,7 +338,10 @@ def main():
     elif DEPLOY_MODE == "github":
         BASE_URL = f"https://{GITHUB_USERNAME}.github.io/qr-system/products/"
     elif DEPLOY_MODE == "netlify":
-        BASE_URL = "NETLIFY_URL/products/"  # Will be updated after first deploy
+        # Netlify URL will be set after first deployment
+        # For first deploy, use placeholder - update after getting your URL
+        NETLIFY_SITE = os.environ.get("NETLIFY_SITE_URL", "https://feltandyarn-qr.netlify.app")
+        BASE_URL = f"{NETLIFY_SITE}/products/"
     
     print(f"Using Base URL: {BASE_URL}")
 

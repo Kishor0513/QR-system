@@ -1,2 +1,1 @@
-qrcode[pil]>=8.0
-Pillow>=9.1.0
+python-3.11
