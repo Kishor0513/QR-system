@@ -1,19 +1,22 @@
 import csv
 import os
 import re
+import sys
 from pathlib import Path
 from typing import List, Dict
 
 try:
     import qrcode
 except ImportError:
-    qrcode = None
+    print("Error: 'qrcode' library not found. Please run: pip install -r requirements.txt")
+    sys.exit(1)
 
 ROOT = Path(__file__).parent
 CSV_DIR = ROOT / "csvs"
 SITE_DIR = ROOT / "site"
 PRODUCT_PAGES_DIR = SITE_DIR / "products"
 QRCODE_DIR = SITE_DIR / "qrcodes"
+ASSETS_DIR = SITE_DIR / "assets"
 
 HEADERS_TO_SHOW = [
     "Product Name",
@@ -39,6 +42,8 @@ LABEL_FIELD = "Product label (3-5 Characters)"
 NAME_FIELD = "Product Name"
 SN_FIELD = "SN"
 
+PLACEHOLDER_IMAGE_PATH = "assets/placeholder.jpg"
+
 
 def slugify(text: str) -> str:
     text = text.lower().strip()
@@ -50,34 +55,48 @@ def slugify(text: str) -> str:
 
 def read_csv_file(path: Path) -> List[Dict[str, str]]:
     rows = []
-    with path.open("r", encoding="utf-8-sig", newline="") as f:
-        reader = csv.reader(f)
-        raw_rows = list(reader)
+    try:
+        with path.open("r", encoding="utf-8-sig", newline="") as f:
+            reader = csv.reader(f)
+            raw_rows = list(reader)
+    except Exception as e:
+        print(f"Error reading {path.name}: {e}")
+        return []
+
     if not raw_rows:
         return rows
+    
     # Merge multi-line header parts: Some headers have embedded newlines inside quotes already handled by csv
     header = raw_rows[0]
     # Clean header cells
     cleaned_header = [re.sub(r"\s+", " ", h).strip() for h in header]
+    
     for r in raw_rows[1:]:
         if len(r) == 0:
             continue
         # Pad row if shorter
         if len(r) < len(cleaned_header):
             r = r + ["" for _ in range(len(cleaned_header) - len(r))]
+        
         row_dict = {cleaned_header[i]: r[i].strip() for i in range(len(cleaned_header))}
-        # Skip rows with no product name and no URL
+        
+        # Skip rows with no product name
         name = row_dict.get(NAME_FIELD, "").strip()
-        url = row_dict.get(PRODUCT_URL_FIELD, "").strip()
-        if not name and not url:
+        if not name:
             continue
+            
         rows.append(row_dict)
     return rows
 
 
 def gather_products() -> List[Dict[str, str]]:
     all_products: List[Dict[str, str]] = []
+    if not CSV_DIR.exists():
+        print(f"Warning: CSV directory not found at {CSV_DIR}")
+        return []
+        
     for csv_file in sorted(CSV_DIR.glob("*.csv")):
+        print(f"Processing {csv_file.name}...")
         all_products.extend(read_csv_file(csv_file))
     return all_products
 
@@ -85,15 +104,32 @@ def gather_products() -> List[Dict[str, str]]:
 def ensure_dirs():
     PRODUCT_PAGES_DIR.mkdir(parents=True, exist_ok=True)
     QRCODE_DIR.mkdir(parents=True, exist_ok=True)
+    ASSETS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def generate_qr(url: str, out_path: Path):
     if not url:
         return
-    if qrcode is None:
-        return
     img = qrcode.make(url)
     img.save(out_path)
+
+
+def create_placeholder_image():
+    placeholder_path = ASSETS_DIR / "placeholder.jpg"
+    if not placeholder_path.exists():
+        try:
+            from PIL import Image, ImageDraw, ImageFont
+            img = Image.new('RGB', (400, 400), color='#e1e1e1')
+            d = ImageDraw.Draw(img)
+            # Draw a simple cross or text if font is available, otherwise just a colored box
+            d.rectangle([100, 180, 300, 220], fill='#999999')
+            d.rectangle([180, 100, 220, 300], fill='#999999')
+            img.save(placeholder_path)
+            print(f"Created placeholder image at {placeholder_path}")
+        except ImportError:
+            print("Warning: Pillow not installed. Cannot create placeholder image.")
+        except Exception as e:
+            print(f"Warning: Could not create placeholder image: {e}")
 
 
 def product_page_html(product: Dict[str, str], page_url: str) -> str:
@@ -108,7 +144,10 @@ def product_page_html(product: Dict[str, str], page_url: str) -> str:
     processes = product.get("Processes", "")
     attributes = product.get("Attributes", "")
     
-    img_block = f"<img src='{img_url}' alt='{name}' class='product-image'>" if img_url else ""
+    # Use placeholder if no image link
+    display_img_url = img_url if img_url else f"../{PLACEHOLDER_IMAGE_PATH}"
+    
+    img_block = f"<img src='{display_img_url}' alt='{name}' class='product-image' onerror=\"this.src='../{PLACEHOLDER_IMAGE_PATH}'\">"
     
     info_rows = []
     if label:
@@ -172,7 +211,8 @@ body {{
 .product-image {{
     width: 100%;
     max-height: 400px;
-    object-fit: cover;
+    object-fit: contain;
+    background-color: #f8f9fa;
     border-radius: 12px;
     margin-bottom: 24px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
@@ -253,7 +293,7 @@ body {{
         <div class='info-grid'>
             {''.join(info_rows)}
         </div>
-        {f"<a href='{product_url}' class='cta-button' target='_blank'>🛒 View Full Details & Purchase</a>" if product_url else ""}
+        {f"<a href='{product_url}' class='cta-button' target='_blank'>🛒 View Full Details & Purchase</a>" if product_url else "<div class='cta-button' style='background:#ccc; cursor:not-allowed;'>Link Not Available</div>"}
     </div>
     <div class='footer'>
         Scanned from Felt & Yarn QR Code
@@ -312,40 +352,25 @@ searchInput.addEventListener('input', () => {{
 
 
 def main():
+    print("Starting site generation...")
     ensure_dirs()
+    create_placeholder_image()
+    
     products = gather_products()
+    if not products:
+        print("No products found in CSV files.")
+        return
+
     products_meta = []
     
-    # You'll need to replace this with your actual deployment URL after hosting
-    # For local testing, use: http://localhost:8080/products/
-    # Update GITHUB_USERNAME with your actual GitHub username before deploying
-    GITHUB_USERNAME = "Kishor0513"
+    # Deployment Configuration
+    # For Netlify, we want to use the environment variable if available, otherwise default
+    NETLIFY_SITE = os.environ.get("URL", "https://feltandyarn-qr.netlify.app")
+    BASE_URL = f"{NETLIFY_SITE}/products/"
     
-    # Choose deployment mode: 'local', 'github', or 'netlify'
-    DEPLOY_MODE = "netlify"  # Change this based on where you're deploying
-    
-    if DEPLOY_MODE == "local":
-        # Auto-detect local IP
-        import socket
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(('10.255.255.255', 1))
-            local_ip = s.getsockname()[0]
-            s.close()
-        except Exception:
-            local_ip = 'localhost'
-        BASE_URL = f"http://{local_ip}:8080/products/"
-    elif DEPLOY_MODE == "github":
-        BASE_URL = f"https://{GITHUB_USERNAME}.github.io/qr-system/products/"
-    elif DEPLOY_MODE == "netlify":
-        # Netlify URL will be set after first deployment
-        # For first deploy, use placeholder - update after getting your URL
-        NETLIFY_SITE = os.environ.get("NETLIFY_SITE_URL", "https://feltandyarn-qr.netlify.app")
-        BASE_URL = f"{NETLIFY_SITE}/products/"
-    
-    print(f"Using Base URL: {BASE_URL}")
+    print(f"Using Base URL for QR Codes: {BASE_URL}")
 
-    
+    count = 0
     for product in products:
         name = product.get(NAME_FIELD, "").strip()
         if not name:
@@ -356,20 +381,25 @@ def main():
         category = product.get("Category Name", "").strip()
         base_slug_source = label or name
         slug = slugify(base_slug_source)
-        # Guarantee uniqueness
-        if any(p['slug'] == slug for p in products_meta):
-            slug = f"{slug}-{sn or len(products_meta)+1}"
         
-        # QR points to OUR page, not feltandyarn directly
+        # Guarantee uniqueness
+        original_slug = slug
+        counter = 1
+        while any(p['slug'] == slug for p in products_meta):
+            slug = f"{original_slug}-{counter}"
+            counter += 1
+        
+        # QR points to OUR page
         page_url = f"{BASE_URL}{slug}.html"
         qr_filename = f"{slug}.png"
         qr_path = QRCODE_DIR / qr_filename
         
-        # Generate QR pointing to our product page
+        # Generate QR
         generate_qr(page_url, qr_path)
         
         page_html = product_page_html(product, page_url)
         (PRODUCT_PAGES_DIR / f"{slug}.html").write_text(page_html, encoding="utf-8")
+        
         products_meta.append({
             'slug': slug,
             'name': name,
@@ -378,12 +408,13 @@ def main():
             'category': category,
             'url': product_url,
         })
+        count += 1
+        if count % 100 == 0:
+            print(f"Generated {count} pages...")
+
     (SITE_DIR / "index.html").write_text(index_html(products_meta), encoding="utf-8")
-    print(f"Generated {len(products_meta)} product pages in {SITE_DIR}")
-    print(f"\nIMPORTANT: Update BASE_URL in build_site.py with your deployment URL,")
-    print(f"then re-run to generate QR codes pointing to the correct location.")
-    if qrcode is None:
-        print("NOTE: 'qrcode' package not installed. Install dependencies to generate QR images.")
+    print(f"Successfully generated {len(products_meta)} product pages in {SITE_DIR}")
+    print(f"Ready for Netlify deployment.")
 
 if __name__ == "__main__":
     main()
