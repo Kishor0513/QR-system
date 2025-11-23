@@ -1,9 +1,34 @@
-# QR System
+# Dependencies
+node_modules/
+package-lock.json
 
-site/
-.git/
-__pycache__/
-*.pyc
-*.pyo
-get-pip.py
-~ip/
+# Generated files - these are built by npm run build
+data/
+public/product/
+public/qr-codes/
+public/data/
+
+# Environment variables
+.env
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+dist/
+build/
+*.log

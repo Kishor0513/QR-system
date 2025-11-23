@@ -1,0 +1,24 @@
+{
+  "name": "feltandyarn-qr-system",
+  "version": "1.0.0",
+  "description": "QR Code generation system for Felt and Yarn products",
+  "main": "index.js",
+  "scripts": {
+    "parse-csv": "node scripts/parse-csvs.js",
+    "generate-qr": "node scripts/generate-qr-codes.js",
+    "generate-pages": "node scripts/generate-pages.js",
+    "build": "npm run parse-csv && npm run generate-qr && npm run generate-pages",
+    "dev": "npm run build && npm run serve",
+    "serve": "npx http-server public -p 8080"
+  },
+  "keywords": ["qr", "products", "feltandyarn"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "csv-parser": "^3.0.0",
+    "qrcode": "^1.5.3"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}

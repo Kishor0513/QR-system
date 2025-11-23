@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Felt and Yarn Product Catalog - Browse our premium handmade felt products">
+    <title>Felt & Yarn - Product Catalog</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav>
+        <div class="container">
+            <a href="index.html" class="logo">Felt & Yarn</a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="qr-index.html">QR Codes</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main>
+        <section class="hero">
+            <div class="container">
+                <h1 class="animate-in">Felt & Yarn Product Catalog</h1>
+                <p class="hero-subtitle animate-in">
+                    Discover our collection of premium handmade felt products. 
+                    Each product comes with a unique QR code for easy sharing.
+                </p>
+            </div>
+        </section>
+
+        <section class="container">
+            <div class="search-container">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    class="search-input" 
+                    placeholder="🔍 Search products by name or category..."
+                >
+            </div>
+
+            <div id="productGrid" class="product-grid">
+                <!-- Products will be loaded here dynamically -->
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Felt and Yarn. All rights reserved.</p>
+            <p>Premium handmade felt products from Nepal</p>
+        </div>
+    </footer>
+
+    <script>
+        // Load and display products
+        async function loadProducts() {
+            try {
+                const response = await fetch('data/products.json');
+                const products = await response.json();
+                displayProducts(products);
+                setupSearch(products);
+            } catch (error) {
+                console.error('Error loading products:', error);
+                document.getElementById('productGrid').innerHTML = 
+                    '<p class="text-center">Error loading products. Please try again later.</p>';
+            }
+        }
+
+        function displayProducts(products) {
+            const grid = document.getElementById('productGrid');
+            grid.innerHTML = products.map(product => {
+                const imageURL = product.imageLink || null;
+                const imageHTML = imageURL
+                    ? `<img src="${imageURL}" alt="${product.name}" class="product-image" loading="lazy">`
+                    : `<div class="product-image placeholder-image">📦</div>`;
+                
+                return `
+                    <a href="product/${product.id}.html" class="card product-card animate-in">
+                        ${imageHTML}
+                        <div>
+                            <div class="product-category">${product.category}</div>
+                            <h3 class="product-name">${product.name}</h3>
+                            ${product.description ? `<p class="text-muted" style="font-size: 0.875rem; margin-top: 0.5rem;">${product.description.substring(0, 100)}${product.description.length > 100 ? '...' : ''}</p>` : ''}
+                        </div>
+                    </a>
+                `;
+            }).join('');
+        }
+
+        function setupSearch(products) {
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                const filtered = products.filter(p => 
+                    p.name.toLowerCase().includes(query) || 
+                    p.category.toLowerCase().includes(query) ||
+                    (p.description && p.description.toLowerCase().includes(query))
+                );
+                displayProducts(filtered);
+            });
+        }
+
+        // Load products on page load
+        loadProducts();
+    </script>
+</body>
+</html>

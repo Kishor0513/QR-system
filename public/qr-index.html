@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="QR Codes for all Felt and Yarn products">
+    <title>QR Code Gallery | Felt & Yarn</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .qr-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        
+        .qr-card {
+            text-align: center;
+        }
+        
+        .qr-card-image {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 1rem;
+            background: white;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .qr-card-image img {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .qr-card-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .qr-card-category {
+            font-size: 0.75rem;
+            color: var(--accent-light);
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+        
+        .qr-download-links {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .qr-download-links a {
+            padding: 0.5rem 1rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            transition: all var(--transition-base);
+        }
+        
+        .qr-download-links a:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+        
+        @media print {
+            body {
+                background: white;
+            }
+            
+            nav, footer, .search-container {
+                display: none;
+            }
+            
+            .qr-download-links {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="container">
+            <a href="index.html" class="logo">Felt & Yarn</a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="qr-index.html">QR Codes</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main>
+        <section class="hero">
+            <div class="container">
+                <h1 class="animate-in">QR Code Gallery</h1>
+                <p class="hero-subtitle animate-in">
+                    Download and print QR codes for all products. 
+                    Each code links directly to the product detail page.
+                </p>
+                <button onclick="window.print()" class="btn btn-primary mt-3">
+                    🖨️ Print All QR Codes
+                </button>
+            </div>
+        </section>
+
+        <section class="container">
+            <div class="search-container">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    class="search-input" 
+                    placeholder="🔍 Search QR codes by product name or category..."
+                >
+            </div>
+
+            <div id="qrGrid" class="qr-grid">
+                <!-- QR codes will be loaded here dynamically -->
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Felt and Yarn. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Load and display QR codes
+        async function loadQRCodes() {
+            try {
+                const response = await fetch('data/products.json');
+                const products = await response.json();
+                displayQRCodes(products);
+                setupSearch(products);
+            } catch (error) {
+                console.error('Error loading products:', error);
+                document.getElementById('qrGrid').innerHTML = 
+                    '<p class="text-center">Error loading QR codes. Please try again later.</p>';
+            }
+        }
+
+        function displayQRCodes(products) {
+            const grid = document.getElementById('qrGrid');
+            grid.innerHTML = products.map(product => `
+                <div class="card qr-card animate-in">
+                    <div class="qr-card-image">
+                        <img src="qr-codes/${product.id}.png" alt="QR Code for ${product.name}" loading="lazy">
+                    </div>
+                    <div class="qr-card-title">${product.name}</div>
+                    <div class="qr-card-category">${product.category}</div>
+                    <div class="qr-download-links">
+                        <a href="qr-codes/${product.id}.png" download>PNG</a>
+                        <a href="qr-codes/${product.id}.svg" download>SVG</a>
+                        <a href="product/${product.id}.html">View Product</a>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function setupSearch(products) {
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                const filtered = products.filter(p => 
+                    p.name.toLowerCase().includes(query) || 
+                    p.category.toLowerCase().includes(query)
+                );
+                displayQRCodes(filtered);
+            });
+        }
+
+        // Load QR codes on page load
+        loadQRCodes();
+    </script>
+</body>
+</html>
