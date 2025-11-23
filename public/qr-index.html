@@ -134,8 +134,9 @@
     <script>
         async function loadQRCodes() {
             try {
-                console.log('Fetching products from: data/products.json');
-                const response = await fetch('data/products.json');
+                const productsPath = '/data/products.json';
+                console.log('Fetching products from:', productsPath);
+                const response = await fetch(productsPath);
                 console.log('Response status:', response.status);
 
                 if (!response.ok) {
