@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,11 +14,11 @@
             gap: 1.5rem;
             margin: 2rem 0;
         }
-        
+
         .qr-card {
             text-align: center;
         }
-        
+
         .qr-card-image {
             width: 200px;
             height: 200px;
@@ -27,33 +28,33 @@
             border-radius: 0.75rem;
             box-shadow: var(--shadow-lg);
         }
-        
+
         .qr-card-image img {
             width: 100%;
             height: 100%;
         }
-        
+
         .qr-card-title {
             font-size: 0.875rem;
             font-weight: 600;
             color: var(--text-primary);
             margin-bottom: 0.5rem;
         }
-        
+
         .qr-card-category {
             font-size: 0.75rem;
             color: var(--accent-light);
             text-transform: uppercase;
             margin-bottom: 1rem;
         }
-        
+
         .qr-download-links {
             display: flex;
             gap: 0.5rem;
             justify-content: center;
             flex-wrap: wrap;
         }
-        
+
         .qr-download-links a {
             padding: 0.5rem 1rem;
             background: var(--glass-bg);
@@ -62,28 +63,31 @@
             font-size: 0.875rem;
             transition: all var(--transition-base);
         }
-        
+
         .qr-download-links a:hover {
             background: var(--primary);
             border-color: var(--primary);
             color: white;
         }
-        
+
         @media print {
             body {
                 background: white;
             }
-            
-            nav, footer, .search-container {
+
+            nav,
+            footer,
+            .search-container {
                 display: none;
             }
-            
+
             .qr-download-links {
                 display: none;
             }
         }
     </style>
 </head>
+
 <body>
     <nav>
         <div class="container">
@@ -100,7 +104,7 @@
             <div class="container">
                 <h1 class="animate-in">QR Code Gallery</h1>
                 <p class="hero-subtitle animate-in">
-                    Download and print QR codes for all products. 
+                    Download and print QR codes for all products.
                     Each code links directly to the product detail page.
                 </p>
                 <button onclick="window.print()" class="btn btn-primary mt-3">
@@ -111,12 +115,8 @@
 
         <section class="container">
             <div class="search-container">
-                <input 
-                    type="text" 
-                    id="searchInput" 
-                    class="search-input" 
-                    placeholder="🔍 Search QR codes by product name or category..."
-                >
+                <input type="text" id="searchInput" class="search-input"
+                    placeholder="🔍 Search QR codes by product name or category...">
             </div>
 
             <div id="qrGrid" class="qr-grid">
@@ -132,17 +132,27 @@
     </footer>
 
     <script>
-        // Load and display QR codes
         async function loadQRCodes() {
             try {
+                console.log('Fetching products from: data/products.json');
                 const response = await fetch('data/products.json');
+                console.log('Response status:', response.status);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
                 const products = await response.json();
+                console.log('Loaded products:', products.length);
                 displayQRCodes(products);
                 setupSearch(products);
             } catch (error) {
                 console.error('Error loading products:', error);
-                document.getElementById('qrGrid').innerHTML = 
-                    '<p class="text-center">Error loading QR codes. Please try again later.</p>';
+                document.getElementById('qrGrid').innerHTML =
+                    `<p class="text-center" style="color: var(--text-secondary); padding: 2rem;">
+                        Error loading QR codes: ${error.message}<br>
+                        Please make sure the server is running and products.json exists.
+                    </p>`;
             }
         }
 
@@ -168,8 +178,8 @@
             const searchInput = document.getElementById('searchInput');
             searchInput.addEventListener('input', (e) => {
                 const query = e.target.value.toLowerCase();
-                const filtered = products.filter(p => 
-                    p.name.toLowerCase().includes(query) || 
+                const filtered = products.filter(p =>
+                    p.name.toLowerCase().includes(query) ||
                     p.category.toLowerCase().includes(query)
                 );
                 displayQRCodes(filtered);
@@ -180,4 +190,5 @@
         loadQRCodes();
     </script>
 </body>
+
 </html>
